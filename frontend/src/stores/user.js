@@ -42,6 +42,19 @@ export const useUserStore = defineStore('user', () => {
     return response
   }
 
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await getCurrentUser()
+      const userData = response.data
+      roles.value = userData.roles || []
+      permissions.value = userData.permissions || []
+      localStorage.setItem('roles', JSON.stringify(userData.roles || []))
+      localStorage.setItem('permissions', JSON.stringify(userData.permissions || []))
+    } catch (error) {
+      console.error('Failed to fetch current user:', error)
+    }
+  }
+
   const logout = () => {
     clearAuth()
   }
@@ -56,6 +69,7 @@ export const useUserStore = defineStore('user', () => {
     hasPermission,
     login,
     logout,
+    fetchCurrentUser,
     setAuth,
     clearAuth
   }

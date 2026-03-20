@@ -6,7 +6,7 @@ import com.example.rbac.entity.Role;
 import com.example.rbac.entity.User;
 import com.example.rbac.repository.UserRepository;
 import com.example.rbac.security.JwtTokenProvider;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,7 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -83,5 +85,43 @@ public class AuthController {
         responseDTO.setEmail(savedUser.getEmail());
         
         return ResponseEntity.ok(ApiResponse.success(responseDTO));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserDTO>> getCurrentUser(Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username).orElseThrow();
+        
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(user.getId());
+        userDTO.setUsername(user.getUsername());
+        userDTO.setEmail(user.getEmail());
+        userDTO.setRealName(user.getRealName());
+        userDTO.setPhone(user.getPhone());
+        userDTO.setIsActive(user.getIsActive());
+        
+        Set<String> roles = user.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        userDTO.setRoles(roles);
+        
+        Set<String> permissions = user.getRoles().stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .map(Permission::getCode)
+                .collect(Collectors.toSet());
+        userDTO.setPermissions(permissions);
+        
+        return ResponseEntity.ok(ApiResponse.success(userDTO));
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> testAuth(Authentication authentication) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("name", authentication.getName());
+        result.put("authorities", authentication.getAuthorities().stream()
+                .map(Object::toString)
+                .collect(Collectors.toList()));
+        result.put("isAuthenticated", authentication.isAuthenticated());
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

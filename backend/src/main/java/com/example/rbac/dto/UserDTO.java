@@ -16,6 +16,8 @@ public class UserDTO {
     private Boolean isActive;
     private Set<Long> roleIds;
     private Set<String> roleNames;
+    private Set<String> roles;
+    private Set<String> permissions;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginTime;
 }
