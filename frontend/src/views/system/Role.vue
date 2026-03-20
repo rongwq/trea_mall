@@ -37,7 +37,7 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="角色名称" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-tooltip :content="row.name" placement="top" :disabled="row.name.length <= 20">
+            <el-tooltip :content="row.name" placement="top" :disabled="!row.name || row.name.length <= 20">
               <span>{{ row.name }}</span>
             </el-tooltip>
           </template>
@@ -227,7 +227,7 @@ const rules = {
   name: [
     { required: true, message: '请输入角色名称', trigger: 'blur' },
     { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' },
-    { pattern: /^[\u4e00-\u9fa5a-zA-Z0-9_\-]+$/, message: '只能包含中文、字母、数字、下划线和横线', trigger: 'blur' }
+    { pattern: /^[\u4e00-\u9fa5a-zA-Z0_9_\-]+$/, message: '只能包含中文、字母、数字、下划线和横线', trigger: 'blur' }
   ],
   code: [
     { required: true, message: '请输入角色编码', trigger: 'blur' },
@@ -255,6 +255,8 @@ const loadData = async () => {
   } catch (error) {
     console.error('加载角色列表失败:', error)
     ElMessage.error('加载数据失败，请稍后重试')
+    tableData.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
@@ -271,6 +273,7 @@ const loadPermissions = async () => {
   } catch (error) {
     console.error('加载权限列表失败:', error)
     ElMessage.error('加载权限数据失败')
+    permissionTree.value = []
   } finally {
     permissionLoading.value = false
   }
@@ -428,8 +431,7 @@ const handleDelete = async (row) => {
       { 
         type: 'warning',
         confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        confirmButtonClass: 'el-button--danger'
+        cancelButtonText: '取消'
       }
     )
     
