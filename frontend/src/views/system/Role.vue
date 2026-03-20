@@ -63,8 +63,8 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :label="1">启用</el-radio>
-            <el-radio :label="0">禁用</el-radio>
+            <el-radio :value="1">启用</el-radio>
+            <el-radio :value="0">禁用</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -74,8 +74,10 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="permissionDialogVisible" title="分配权限" width="500px">
+    <el-dialog v-model="permissionDialogVisible" title="分配权限" width="500px" @closed="handlePermissionDialogClosed">
+      <el-empty v-if="permissionTree.length === 0" description="暂无可分配权限" />
       <el-tree
+        v-else
         ref="treeRef"
         :data="permissionTree"
         :props="{ label: 'name', children: 'children' }"
@@ -191,7 +193,6 @@ const buildTree = (permissions, parentId = 0) => {
       ...p,
       children: buildTree(permissions, p.id)
     }))
-    .filter(p => p.children.length > 0 || p.parentId !== undefined)
 }
 
 const resetForm = () => {
@@ -201,6 +202,12 @@ const resetForm = () => {
 const handleDialogClosed = () => {
   formRef.value?.clearValidate()
   resetForm()
+}
+
+const handlePermissionDialogClosed = () => {
+  if (treeRef.value) {
+    treeRef.value.setCheckedKeys([])
+  }
 }
 
 const handleSearch = () => {
