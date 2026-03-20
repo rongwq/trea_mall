@@ -13,14 +13,14 @@ import java.util.Set;
 
 @Repository
 public interface PermissionRepository extends JpaRepository<Permission, Long> {
-    
+
     Optional<Permission> findByCode(String code);
-    
+
     boolean existsByCode(String code);
-    
+
     @Query("SELECT p FROM Permission p WHERE " +
            "(:keyword IS NULL OR p.name LIKE %:keyword% OR p.code LIKE %:keyword%)")
     Page<Permission> searchPermissions(@Param("keyword") String keyword, Pageable pageable);
-    
+
     Set<Permission> findByIdIn(Set<Long> ids);
 }
