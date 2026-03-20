@@ -49,12 +49,5 @@ FROM roles r, permissions p
 WHERE r.code = 'READ_ONLY' 
 AND p.code IN ('user:read', 'role:read', 'permission:read');
 
--- 插入默认管理员用户（密码：admin123，BCrypt加密）
-INSERT INTO users (username, password, email, real_name, is_active) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EO', 'admin@example.com', '系统管理员', 1);
-
--- 为管理员用户分配管理员角色
-INSERT INTO user_roles (user_id, role_id)
-SELECT u.id, r.id 
-FROM users u, roles r 
-WHERE u.username = 'admin' AND r.code = 'ADMIN';
+-- 注意：管理员用户由 DataInitializer.java 在应用启动时自动创建
+-- 默认账号：admin / admin123

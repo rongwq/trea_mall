@@ -37,8 +37,8 @@ public class DataInitializer implements CommandLineRunner {
             initRoles();
         }
 
-        // Initialize admin user
-        if (userRepository.count() == 0) {
+        // Initialize admin user (check if admin exists, not just if table is empty)
+        if (userRepository.findByUsername("admin").isEmpty()) {
             initAdminUser();
         }
     }
@@ -82,8 +82,10 @@ public class DataInitializer implements CommandLineRunner {
         adminRole.setPermissions(allPermissions);
         roleRepository.save(adminRole);
 
-        // User manager role
-        Set<Permission> userPermissions = new HashSet<>(permissionRepository.findAllById(Set.of(1L, 2L, 3L, 4L)));
+        // User manager role - find permissions by code instead of hardcoded IDs
+        Set<Permission> userPermissions = new HashSet<>();
+        permissionRepository.findByCodeIn(Set.of("user:create", "user:read", "user:update", "user:delete"))
+                .forEach(userPermissions::add);
         Role userManagerRole = new Role();
         userManagerRole.setCode("USER_MANAGER");
         userManagerRole.setName("用户管理员");
@@ -91,8 +93,10 @@ public class DataInitializer implements CommandLineRunner {
         userManagerRole.setPermissions(userPermissions);
         roleRepository.save(userManagerRole);
 
-        // Read only role
-        Set<Permission> readPermissions = new HashSet<>(permissionRepository.findAllById(Set.of(2L, 6L, 10L)));
+        // Read only role - find permissions by code instead of hardcoded IDs
+        Set<Permission> readPermissions = new HashSet<>();
+        permissionRepository.findByCodeIn(Set.of("user:read", "role:read", "permission:read"))
+                .forEach(readPermissions::add);
         Role readOnlyRole = new Role();
         readOnlyRole.setCode("READ_ONLY");
         readOnlyRole.setName("只读用户");

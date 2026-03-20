@@ -10,24 +10,35 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @Entity
 @Table(name = "permissions")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
 public class Permission {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private Long id;
     
     @Column(unique = true, nullable = false)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private String code;
     
     @Column(nullable = false)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private String name;
     
+    @ToString.Include
     private String description;
     
     @ManyToMany(mappedBy = "permissions")

@@ -23,4 +23,6 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
     Page<Permission> searchPermissions(@Param("keyword") String keyword, Pageable pageable);
     
     Set<Permission> findByIdIn(Set<Long> ids);
+    
+    Set<Permission> findByCodeIn(Set<String> codes);
 }
