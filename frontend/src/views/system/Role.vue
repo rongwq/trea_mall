@@ -237,11 +237,12 @@ const handleSubmit = async () => {
 
   submitLoading.value = true
   try {
+    const filteredData = filterFormData(form)
     if (isEdit.value) {
-      await updateRole(currentRoleId.value, form)
+      await updateRole(currentRoleId.value, filteredData)
       ElMessage.success('更新成功')
     } else {
-      await createRole(form)
+      await createRole(filteredData)
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
@@ -323,6 +324,7 @@ const handleAssignPermissionSubmit = async () => {
   }
 }
 
+// XSS过滤
 const xssFilter = (str) => {
   if (!str) return ''
   return str.replace(/[<>&"'`]/g, (match) => {
@@ -337,6 +339,14 @@ const xssFilter = (str) => {
     return escape[match]
   })
 }
+
+// 过滤表单数据
+const filterFormData = (data) => ({
+  ...data,
+  name: xssFilter(data.name),
+  code: xssFilter(data.code),
+  description: xssFilter(data.description)
+})
 
 onMounted(() => {
   loadData()
