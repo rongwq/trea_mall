@@ -17,7 +17,7 @@
         </el-form-item>
       </el-form>
 
-      <el-table :data="tableData" v-loading="loading" stripe>
+      <el-table :data="tableData" v-loading="loading" stripe empty-text="暂无用户数据">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="username" label="用户名" />
         <el-table-column prop="email" label="邮箱" />
@@ -77,7 +77,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitLoading">确定</el-button>
       </template>
     </el-dialog>
 
@@ -94,11 +94,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUserList, createUser, updateUser, deleteUser, getAllRoles, assignUserRoles } from '@/api'
 
 const loading = ref(false)
+const deleteLoading = ref(false)
+const submitLoading = ref(false)
 const tableData = ref([])
 const dialogVisible = ref(false)
 const roleDialogVisible = ref(false)
@@ -127,10 +129,16 @@ const form = reactive({
   status: 1
 })
 
-const rules = {
+const rules = computed(() => ({
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-}
+  password: isEdit.value ? [] : [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  email: [
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+  ],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号', trigger: 'blur' }
+  ]
+}))
 
 const loadData = async () => {
   loading.value = true
@@ -142,20 +150,32 @@ const loadData = async () => {
     })
     tableData.value = res.data.records
     pagination.total = res.data.total
+  } catch (error) {
+    console.error('加载用户列表失败:', error)
+    tableData.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
 }
 
 const loadAllRoles = async () => {
-  const res = await getAllRoles()
-  allRoles.value = res.data
+  try {
+    const res = await getAllRoles()
+    allRoles.value = res.data
+  } catch (error) {
+    console.error('加载角色列表失败:', error)
+    allRoles.value = []
+  }
 }
 
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增用户'
   Object.assign(form, { username: '', password: '', email: '', phone: '', status: 1 })
+  if (formRef.value) {
+    formRef.value.clearValidate()
+  }
   dialogVisible.value = true
 }
 
@@ -164,6 +184,9 @@ const handleEdit = (row) => {
   dialogTitle.value = '编辑用户'
   currentUserId.value = row.id
   Object.assign(form, { username: row.username, email: row.email, phone: row.phone, status: row.status })
+  if (formRef.value) {
+    formRef.value.clearValidate()
+  }
   dialogVisible.value = true
 }
 
@@ -171,35 +194,57 @@ const handleSubmit = async () => {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
   
-  if (isEdit.value) {
-    await updateUser(currentUserId.value, form)
-    ElMessage.success('更新成功')
-  } else {
-    await createUser(form)
-    ElMessage.success('创建成功')
+  submitLoading.value = true
+  try {
+    if (isEdit.value) {
+      await updateUser(currentUserId.value, form)
+      ElMessage.success('更新成功')
+    } else {
+      await createUser(form)
+      ElMessage.success('创建成功')
+    }
+    dialogVisible.value = false
+    loadData()
+  } catch (error) {
+    console.error('保存用户失败:', error)
+  } finally {
+    submitLoading.value = false
   }
-  dialogVisible.value = false
-  loadData()
 }
 
 const handleDelete = async (row) => {
-  await ElMessageBox.confirm('确定要删除该用户吗？', '提示', { type: 'warning' })
-  await deleteUser(row.id)
-  ElMessage.success('删除成功')
-  loadData()
+  try {
+    await ElMessageBox.confirm('确定要删除该用户吗？', '提示', { type: 'warning' })
+    deleteLoading.value = true
+    await deleteUser(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除用户失败:', error)
+    }
+  } finally {
+    deleteLoading.value = false
+  }
 }
 
-const handleAssignRole = (row) => {
+const handleAssignRole = async (row) => {
   currentUserId.value = row.id
   selectedRoleIds.value = row.roles ? row.roles.map(r => r.id) : []
+  // 重新获取最新角色列表
+  await loadAllRoles()
   roleDialogVisible.value = true
 }
 
 const handleAssignRoleSubmit = async () => {
-  await assignUserRoles(currentUserId.value, selectedRoleIds.value)
-  ElMessage.success('分配成功')
-  roleDialogVisible.value = false
-  loadData()
+  try {
+    await assignUserRoles(currentUserId.value, selectedRoleIds.value)
+    ElMessage.success('分配成功')
+    roleDialogVisible.value = false
+    loadData()
+  } catch (error) {
+    console.error('分配角色失败:', error)
+  }
 }
 
 onMounted(() => {
