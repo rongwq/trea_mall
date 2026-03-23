@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.example.mall.vo.role.RoleVO;
 import lombok.Data;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -23,5 +24,5 @@ public class User implements Serializable {
     private LocalDateTime updateTime;
     
     @TableField(exist = false)
-    private List<Role> roles;
+    private List<RoleVO> roles;
 }
