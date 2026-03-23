@@ -10,38 +10,66 @@ import com.example.mall.mapper.RoleMapper;
 import com.example.mall.mapper.RolePermissionMapper;
 import com.example.mall.mapper.UserMapper;
 import com.example.mall.mapper.UserRoleMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
+@RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
     
-    @Autowired
-    private UserMapper userMapper;
-    
-    @Autowired
-    private RoleMapper roleMapper;
-    
-    @Autowired
-    private PermissionMapper permissionMapper;
-    
-    @Autowired
-    private UserRoleMapper userRoleMapper;
-    
-    @Autowired
-    private RolePermissionMapper rolePermissionMapper;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
+    private final PermissionMapper permissionMapper;
+    private final UserRoleMapper userRoleMapper;
+    private final RolePermissionMapper rolePermissionMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
     
     @Override
     public void run(String... args) throws Exception {
+        migrateDatabase();
         initAdminUser();
+    }
+    
+    private void migrateDatabase() {
+        try {
+            addDeletedColumn("sys_user");
+            addDeletedColumn("sys_role");
+            addDeletedColumn("sys_permission");
+            log.info("Database migration completed successfully");
+        } catch (Exception e) {
+            log.warn("Database migration warning: {}", e.getMessage());
+        }
+    }
+    
+    private void addDeletedColumn(String tableName) {
+        try {
+            String checkSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'deleted'";
+
+            Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, tableName);
+
+            if (count == null || count == 0) {
+                String alterSql = "ALTER TABLE " + tableName + " ADD COLUMN deleted INT DEFAULT 0";
+                jdbcTemplate.update(alterSql);
+                log.info("Added 'deleted' column to table '{}'", tableName);
+            } else {
+                log.debug("'deleted' column already exists in table '{}'", tableName);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to add 'deleted' column to table '{}': {}", tableName, e.getMessage());
+        }
     }
     
     private void initAdminUser() {

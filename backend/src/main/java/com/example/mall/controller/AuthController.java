@@ -29,7 +29,7 @@ public class AuthController {
     public Result<Map<String, Object>> login(@RequestBody Map<String, String> loginForm) {
         String username = loginForm.get("username");
         String password = loginForm.get("password");
-        User user = userService.getByUsername(username);
+        User user = userService.getByUsername(username).orElse(null);
         if (user == null) {
             return Result.error("用户不存在");
         }
@@ -48,7 +48,7 @@ public class AuthController {
     
     @PostMapping("/register")
     public Result<Void> register(@RequestBody User user) {
-        User existUser = userService.getByUsername(user.getUsername());
+        User existUser = userService.getByUsername(user.getUsername()).orElse(null);
         if (existUser != null) {
             return Result.error("用户名已存在");
         }

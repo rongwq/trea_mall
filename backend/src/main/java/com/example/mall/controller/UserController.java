@@ -1,98 +1,91 @@
 package com.example.mall.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.mall.common.Result;
-import com.example.mall.entity.User;
-import com.example.mall.service.RoleService;
+import com.example.mall.common.ResultCode;
+import com.example.mall.dto.user.AssignRolesDTO;
+import com.example.mall.dto.user.UserCreateDTO;
+import com.example.mall.dto.user.UserQueryDTO;
+import com.example.mall.dto.user.UserUpdateDTO;
+import com.example.mall.exception.BusinessException;
 import com.example.mall.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import com.example.mall.vo.user.UserVO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
+@Tag(name = "用户管理", description = "用户管理相关接口")
 public class UserController {
-    
-    @Autowired
-    private UserService userService;
-    
-    @Autowired
-    private RoleService roleService;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    
+
+    private final UserService userService;
+
     @GetMapping
-    public Result<Page<User>> list(@RequestParam(defaultValue = "1") Integer page,
-                                   @RequestParam(defaultValue = "10") Integer size,
-                                   @RequestParam(required = false) String username) {
-        Page<User> userPage = new Page<>(page, size);
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        if (username != null && !username.isEmpty()) {
-            wrapper.like(User::getUsername, username);
-        }
-        wrapper.orderByDesc(User::getCreateTime);
-        userService.page(userPage, wrapper);
-        userPage.getRecords().forEach(user -> {
-            user.setRoles(roleService.getRolesByUserId(user.getId()));
-        });
-        return Result.success(userPage);
+    @Operation(summary = "分页查询用户列表")
+    @PreAuthorize("hasAuthority('system:user:list')")
+    public Result<IPage<UserVO>> list(@Valid UserQueryDTO queryDTO) {
+        IPage<UserVO> page = userService.queryUsers(queryDTO);
+        return Result.success(page);
     }
-    
+
     @GetMapping("/{id}")
-    public Result<User> getById(@PathVariable Long id) {
-        User user = userService.getById(id);
-        if (user != null) {
-            user.setRoles(roleService.getRolesByUserId(id));
-        }
-        return Result.success(user);
+    @Operation(summary = "根据ID查询用户详情")
+    @PreAuthorize("hasAuthority('system:user:query')")
+    public Result<UserVO> getById(@Parameter(description = "用户ID") @PathVariable Long id) {
+        return userService.getUserWithRolesById(id)
+                .map(Result::success)
+                .orElseThrow(() -> new BusinessException(ResultCode.USER_NOT_FOUND));
     }
-    
+
     @PostMapping
-    public Result<Void> save(@RequestBody User user) {
-        User existUser = userService.getByUsername(user.getUsername());
-        if (existUser != null) {
-            return Result.error("用户名已存在");
-        }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setStatus(1);
-        user.setCreateTime(LocalDateTime.now());
-        user.setUpdateTime(LocalDateTime.now());
-        userService.save(user);
-        return Result.success();
+    @Operation(summary = "创建用户")
+    @PreAuthorize("hasAuthority('system:user:add')")
+    public Result<UserVO> create(@Valid @RequestBody UserCreateDTO createDTO) {
+        UserVO userVO = userService.createUser(createDTO);
+        return Result.success(userVO);
     }
-    
+
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody User user) {
-        User existUser = userService.getById(id);
-        if (existUser == null) {
-            return Result.error("用户不存在");
-        }
-        user.setId(id);
-        user.setUpdateTime(LocalDateTime.now());
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        } else {
-            user.setPassword(existUser.getPassword());
-        }
-        userService.updateById(user);
-        return Result.success();
+    @Operation(summary = "更新用户")
+    @PreAuthorize("hasAuthority('system:user:edit')")
+    public Result<UserVO> update(@Parameter(description = "用户ID") @PathVariable Long id,
+                                 @Valid @RequestBody UserUpdateDTO updateDTO) {
+        UserVO userVO = userService.updateUser(id, updateDTO);
+        return Result.success(userVO);
     }
-    
+
     @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
-        userService.removeById(id);
+    @Operation(summary = "删除用户")
+    @PreAuthorize("hasAuthority('system:user:delete')")
+    public Result<Void> delete(@Parameter(description = "用户ID") @PathVariable Long id) {
+        userService.deleteUser(id);
         return Result.success();
     }
-    
+
+    @DeleteMapping("/batch")
+    @Operation(summary = "批量删除用户")
+    @PreAuthorize("hasAuthority('system:user:delete')")
+    public Result<Void> deleteBatch(@Parameter(description = "用户ID列表") @RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "用户ID列表不能为空");
+        }
+        userService.deleteUsers(ids);
+        return Result.success();
+    }
+
     @PostMapping("/{id}/roles")
-    public Result<Void> assignRoles(@PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
-        List<Long> roleIds = body.get("roleIds");
-        userService.assignRoles(id, roleIds);
+    @Operation(summary = "分配用户角色")
+    @PreAuthorize("hasAuthority('system:user:role')")
+    public Result<Void> assignRoles(@Parameter(description = "用户ID") @PathVariable Long id,
+                                    @Valid @RequestBody AssignRolesDTO assignRolesDTO) {
+        userService.assignRoles(id, assignRolesDTO);
         return Result.success();
     }
 }

@@ -15,22 +15,22 @@ public class Result<T> implements Serializable {
     
     public static <T> Result<T> success(T data) {
         Result<T> result = new Result<>();
-        result.setCode(200);
-        result.setMessage("success");
+        result.setCode(ResultCode.SUCCESS.getCode());
+        result.setMessage(ResultCode.SUCCESS.getMessage());
         result.setData(data);
         return result;
     }
     
     public static <T> Result<T> success(String message, T data) {
         Result<T> result = new Result<>();
-        result.setCode(200);
+        result.setCode(ResultCode.SUCCESS.getCode());
         result.setMessage(message);
         result.setData(data);
         return result;
     }
     
     public static <T> Result<T> error(String message) {
-        return error(500, message);
+        return error(ResultCode.INTERNAL_ERROR.getCode(), message);
     }
     
     public static <T> Result<T> error(Integer code, String message) {
@@ -38,5 +38,24 @@ public class Result<T> implements Serializable {
         result.setCode(code);
         result.setMessage(message);
         return result;
+    }
+    
+    public static <T> Result<T> error(Integer code, String message, T data) {
+        Result<T> result = new Result<>();
+        result.setCode(code);
+        result.setMessage(message);
+        result.setData(data);
+        return result;
+    }
+    
+    public static <T> Result<T> error(ResultCode resultCode) {
+        Result<T> result = new Result<>();
+        result.setCode(resultCode.getCode());
+        result.setMessage(resultCode.getMessage());
+        return result;
+    }
+    
+    public boolean isSuccess() {
+        return ResultCode.SUCCESS.getCode().equals(this.code);
     }
 }
