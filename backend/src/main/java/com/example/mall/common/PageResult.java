@@ -1,0 +1,61 @@
+package com.example.mall.common;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import lombok.Data;
+
+import java.io.Serializable;
+import java.util.List;
+
+/**
+ * 分页结果封装
+ */
+@Data
+public class PageResult<T> implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 当前页
+     */
+    private Long current;
+
+    /**
+     * 每页显示条数
+     */
+    private Long size;
+
+    /**
+     * 总记录数
+     */
+    private Long total;
+
+    /**
+     * 总页数
+     */
+    private Long pages;
+
+    /**
+     * 数据列表
+     */
+    private List<T> records;
+
+    public static <T> PageResult<T> of(IPage<T> page) {
+        PageResult<T> result = new PageResult<>();
+        result.setCurrent(page.getCurrent());
+        result.setSize(page.getSize());
+        result.setTotal(page.getTotal());
+        result.setPages(page.getPages());
+        result.setRecords(page.getRecords());
+        return result;
+    }
+
+    public static <T> PageResult<T> of(Long current, Long size, Long total, List<T> records) {
+        PageResult<T> result = new PageResult<>();
+        result.setCurrent(current);
+        result.setSize(size);
+        result.setTotal(total);
+        result.setPages((total + size - 1) / size);
+        result.setRecords(records);
+        return result;
+    }
+}
