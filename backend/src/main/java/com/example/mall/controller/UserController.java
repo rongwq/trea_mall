@@ -4,9 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.mall.common.Result;
 import com.example.mall.entity.User;
-import com.example.mall.service.RoleService;
+import com.example.mall.service.IRoleService;
 import com.example.mall.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.mall.vo.role.RoleVO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
@@ -14,17 +15,15 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
 public class UserController {
-    
-    @Autowired
-    private UserService userService;
-    
-    @Autowired
-    private RoleService roleService;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+
+    private final UserService userService;
+
+    private final IRoleService roleService;
+
+    private final PasswordEncoder passwordEncoder;
     
     @GetMapping
     public Result<Page<User>> list(@RequestParam(defaultValue = "1") Integer page,
