@@ -33,31 +33,39 @@ export function assignUserRoles(id, roleIds) {
 }
 
 export function getRoleList(params) {
-  return request.get('/roles', { params })
+  return request.get('/v1/roles', { params })
 }
 
 export function getAllRoles() {
-  return request.get('/roles/all')
+  return request.get('/v1/roles/all')
 }
 
 export function getRoleById(id) {
-  return request.get(`/roles/${id}`)
+  return request.get(`/v1/roles/${id}`)
 }
 
 export function createRole(data) {
-  return request.post('/roles', data)
+  return request.post('/v1/roles', data)
 }
 
 export function updateRole(id, data) {
-  return request.put(`/roles/${id}`, data)
+  return request.put(`/v1/roles/${id}`, data)
 }
 
 export function deleteRole(id) {
-  return request.delete(`/roles/${id}`)
+  return request.delete(`/v1/roles/${id}`)
+}
+
+export function batchDeleteRoles(ids) {
+  return request.delete('/v1/roles/batch', { data: ids })
+}
+
+export function updateRoleStatus(id, status) {
+  return request.put(`/v1/roles/${id}/status`, null, { params: { status } })
 }
 
 export function assignRolePermissions(id, permissionIds) {
-  return request.post(`/roles/${id}/permissions`, { permissionIds })
+  return request.put(`/v1/roles/${id}/permissions`, { permissionIds })
 }
 
 export function getPermissionList(params) {
